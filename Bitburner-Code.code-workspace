@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"bitburner.authToken": "eGA8/2uvriCMaj74k8m9y7x0Vbt5VkHOZWtz3vkVtUuOWXR+DoTTQ2GUtmk6VBhH",
+		"bitburner.showPushSuccessNotification": true
+
+	}
+}
