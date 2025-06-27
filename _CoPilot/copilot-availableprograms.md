@@ -4,10 +4,6 @@ This file contains the current list of available commands and programs in the bi
 
 Programs:
     - NUKE.exe
-    - BruteSSH.exe
-    - AutoLink.exe
-    - DeepscanV1.exe
-    - ServerProfiler.exe
 
 Commands:
     alias [-g] [name="value"]        Create or display Terminal aliases
