@@ -69,14 +69,7 @@ export async function main(ns) {
         }
     }
 
-    // Ensure logs directory exists
-    const logsDir = "/logs";
-    const logsExist = ns.ls("home").some(f => f.startsWith("/logs/"));
-    if (!logsExist) {
-        try { ns.mkdir(logsDir); } catch (e) { ns.tprint(`Failed to create logs directory: ${e}`); }
-    }
-
-    // Write log to files
+    // Write log to files (no need to create logs directory)
     const logFile = "/logs/explore.txt";
     const hackedFile = "/logs/hacked.txt";
     await ns.write(logFile, logOutput, "w");

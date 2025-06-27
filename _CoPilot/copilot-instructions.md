@@ -26,3 +26,4 @@ This file contains instructions for GitHub Copilot to better assist with this bi
 ## Additional References
 - In-Game documentation (https://github.com/bitburner-official/bitburner-src)
 - NS API documentation (https://github.com/bitburner-official/bitburner-src/blob/stable/markdown/bitburner.md)
+- https://github.com/oddiz/bitburner-react-ui-example/tree/master
