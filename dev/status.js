@@ -4,34 +4,28 @@
  * @param {NS} ns
  */
 export async function main(ns) {
-    if (ns.ui && ns.ui.openTail) {
-        ns.ui.openTail("status.js"); // Open a floating window using the new API
-    }
+    ns.tail(); // Always open a tail window for this script
+    const logFile = "logs/error-log.txt";
+    let lastMoney = ns.getPlayer().money;
+    let lastHacking = ns.getHackingLevel();
     while (true) {
         ns.clearLog();
-        const processes = ns.ps("home");
-        ns.print("PID\tThreads\tRAM\tFilename\tArgs\tMoney\tSecurity\tLast Log");
-        for (const proc of processes) {
-            // Try to get the target server from args (first arg)
-            let target = proc.args && proc.args.length > 0 ? proc.args[0] : null;
-            let money = "-";
-            let security = "-";
-            if (target && ns.serverExists(target)) {
-                try {
-                    money = ns.nFormat(ns.getServerMoneyAvailable(target), "$0.00a");
-                    security = ns.getServerSecurityLevel(target).toFixed(2);
-                } catch {}
-            }
-            // Get last log line for this process
-            let lastLog = "-";
-            try {
-                const logs = ns.getScriptLogs(proc.filename, "home", ...proc.args);
-                if (logs && logs.length > 0) {
-                    lastLog = logs[logs.length - 1].replace(/\t/g, " ").slice(0, 40);
-                }
-            } catch {}
-            ns.print(`${proc.pid}\t${proc.threads}\t${ns.getScriptRam(proc.filename)}GB\t${proc.filename}\t${proc.args.join(" ")}\t${money}\t${security}\t${lastLog}`);
+        // Money and skill updates
+        const money = ns.getPlayer().money;
+        const hacking = ns.getHackingLevel();
+        let moneyChange = money - lastMoney;
+        let hackingChange = hacking - lastHacking;
+        ns.print(`[STATUS] Money: $${ns.nFormat(money, '0.00a')} (${moneyChange >= 0 ? '+' : ''}${ns.nFormat(moneyChange, '0.00a')}) | Hacking: ${hacking} (${hackingChange >= 0 ? '+' : ''}${hackingChange})`);
+        lastMoney = money;
+        lastHacking = hacking;
+        // Error log
+        ns.print("[STATUS] Monitoring error log: " + logFile);
+        if (ns.fileExists(logFile, "home")) {
+            const log = ns.read(logFile);
+            ns.print(log);
+        } else {
+            ns.print("No errors logged yet.");
         }
-        await ns.sleep(1000);
+        await ns.sleep(2000);
     }
 }

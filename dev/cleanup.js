@@ -14,19 +14,19 @@ export async function main(ns) {
         }
     }
 
-    // Helper to delete all files in a directory except cleanup.js
+    // Helper to delete all files in a directory except cleanup.js and master.js
     function deleteFilesInDir(dir) {
         const files = ns.ls("home", dir + "/");
         for (const file of files) {
-            if (file.endsWith("cleanup.js")) continue;
+            if (file.endsWith("cleanup.js") || file.endsWith("master.js")) continue;
             ns.rm(file, "home");
         }
     }
 
-    // Clean dev, prod, and logs directories
+    // Clean dev, prod, and logs directories, but keep cleanup.js and master.js
     deleteFilesInDir("dev");
     deleteFilesInDir("prod");
     deleteFilesInDir("logs");
 
-    ns.tprint("Cleanup complete. All scripts killed and files deleted except cleanup.js.");
+    ns.tprint("Cleanup complete. All scripts killed and files deleted except cleanup.js and master.js.");
 }
