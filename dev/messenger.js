@@ -30,8 +30,19 @@ export async function main(ns) {
                     } else {
                         response = `I'll try to hack ${target}! (Not really launching, but I could!)`;
                     }
+                } else if (/create program (.+)/i.test(msg)) {
+                    const progName = msg.match(/create program (.+)/i)[1].trim();
+                    // Only allow .js or .txt for Bitburner
+                    if (!/\.(js|txt)$/i.test(progName)) {
+                        response = `Can only create .js or .txt files in Bitburner. Try again!`;
+                    } else if (ns.fileExists(progName, "home")) {
+                        response = `${progName} already exists!`;
+                    } else {
+                        await ns.write(progName, `// ${progName} - created by messenger\n`, "w");
+                        response = `Created new program: ${progName}`;
+                    }
                 } else {
-                    response = `I received: '${msg}'. Type 'status', 'joke', or 'hello'!`;
+                    response = `I received: '${msg}'. Type 'status', 'joke', 'create program <name>.js', or 'hello'!`;
                 }
                 ns.tprint(`[MESSENGER] ${response}`);
                 await ns.write(outbox, `[${new Date().toLocaleTimeString()}] ${response}\n`, "a");
