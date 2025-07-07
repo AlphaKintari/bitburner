@@ -14,6 +14,12 @@ export async function main(ns) {
         }
     }
 
+    // Close all open tail/log windows
+    if (ns.closeTail) {
+        ns.tprint("Closing all open tail/log windows...");
+        ns.closeTail(); // Closes all open tail windows
+    }
+
     // Helper to delete all files in a directory except cleanup.js and master.js
     function deleteFilesInDir(dir) {
         const files = ns.ls("home", dir + "/");

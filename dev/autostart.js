@@ -22,15 +22,26 @@ export async function main(ns) {
         "prod/explore.js",
         "prod/attack.js"
     ];
+    // Open a dedicated status window (tail) for live status updates
+    ns.tail();
+    ns.print("[AUTOSTART] Launching all automation and utility scripts...");
+    // Track which scripts have already had a tail window opened
+    const tailed = new Set();
     for (const name of scripts) {
         if (!ns.fileExists(name, "home")) {
             ns.tprint(`Missing script: ${name}. Please ensure all scripts are present in the dev/prod folder.`);
+            ns.print(`[AUTOSTART] Missing script: ${name}`);
             continue;
         }
         ns.tprint(`Running ${name}...`);
-        ns.tail(name, "home");
+        ns.print(`[AUTOSTART] Running ${name}...`);
+        if (!tailed.has(name)) {
+            ns.tail(name, "home");
+            tailed.add(name);
+        }
         ns.run(name, 1);
         await ns.sleep(1000);
     }
+    ns.print("[AUTOSTART] All automation and utility scripts launched. Tail windows opened for monitoring.");
     ns.tprint("All automation and utility scripts launched. Tail windows opened for monitoring.");
 }
