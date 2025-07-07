@@ -44,13 +44,27 @@ async function main(ns) {
             }
         }
 
-        // Try to run one thread of each script, targeting the server itself
-        for (const script of scripts) {
+        // RAM-optimized: Only run as many scripts as will fit in available RAM
+        const maxRam = ns.getServerMaxRam(server);
+        const usedRam = ns.getServerUsedRam(server);
+        let freeRam = maxRam - usedRam;
+        // Get RAM usage for each script
+        const ramUsage = scripts.map(s => ns.getScriptRam(s, server));
+
+        // Try to run one thread of each script, but only if enough RAM is available
+        for (let i = 0; i < scripts.length; ++i) {
+            const script = scripts[i];
+            const ramNeeded = ramUsage[i];
+            if (freeRam < ramNeeded) {
+                ns.tprint(`Not enough RAM to run ${script} on ${server}. Skipping.`);
+                continue;
+            }
             // Only start if not already running with the same arguments
             if (!ns.isRunning(script, server, server)) {
                 try {
                     ns.exec(script, server, 1, server); // Run 1 thread, target = server
                     ns.tprint(`Started ${script} on ${server}`);
+                    freeRam -= ramNeeded;
                 } catch (e) {
                     ns.tprint(`Failed to start ${script} on ${server}: ${e}`);
                 }
