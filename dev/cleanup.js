@@ -14,11 +14,13 @@ export async function main(ns) {
         }
     }
 
-    // Close all open tail/log windows
+    // Close this script's tail window (Bitburner limitation: cannot close all tails programmatically)
     if (ns.closeTail) {
-        ns.tprint("Closing all open tail/log windows...");
-        ns.closeTail(); // Closes all open tail windows
+        ns.tprint("Closing this script's tail window (cannot close all tails programmatically).");
+        ns.closeTail();
     }
+    // Inform the user about manual tail closing
+    ns.tprint("NOTE: Bitburner does not allow scripts to close all tail/log windows. Please close any remaining tails manually if needed.");
 
     // Helper to delete all files in a directory except cleanup.js and master.js
     function deleteFilesInDir(dir) {
