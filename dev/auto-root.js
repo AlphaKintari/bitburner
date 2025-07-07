@@ -12,18 +12,27 @@ export async function main(ns) {
     }
 
     const servers = scanAllServers(ns);
+    // List of available port openers (dynamically based on your markdown)
+    const portOpeners = [];
+    if (ns.fileExists("BruteSSH.exe", "home")) portOpeners.push(s => ns.brutessh(s));
+    if (ns.fileExists("FTPCrack.exe", "home")) portOpeners.push(s => ns.ftpcrack(s));
+    if (ns.fileExists("relaySMTP.exe", "home")) portOpeners.push(s => ns.relaysmtp(s));
+    if (ns.fileExists("HTTPWorm.exe", "home")) portOpeners.push(s => ns.httpworm(s));
+    if (ns.fileExists("SQLInject.exe", "home")) portOpeners.push(s => ns.sqlinject(s));
+
     for (const server of servers) {
         if (server === "home" || ns.hasRootAccess(server)) continue;
-        try {
-            if (ns.fileExists("BruteSSH.exe", "home")) ns.brutessh(server);
-            if (ns.fileExists("FTPCrack.exe", "home")) ns.ftpcrack(server);
-            if (ns.fileExists("relaySMTP.exe", "home")) ns.relaysmtp(server);
-            if (ns.fileExists("HTTPWorm.exe", "home")) ns.httpworm(server);
-            if (ns.fileExists("SQLInject.exe", "home")) ns.sqlinject(server);
-            ns.nuke(server);
-            ns.tprint(`Rooted: ${server}`);
-        } catch (e) {
-            ns.tprint(`Failed to root ${server}: ${e}`);
+        // Use only available port openers
+        for (const opener of portOpeners) {
+            try { opener(server); } catch {}
+        }
+        if (portOpeners.length >= ns.getServerNumPortsRequired(server)) {
+            try {
+                ns.nuke(server);
+                ns.tprint(`Rooted: ${server}`);
+            } catch (e) {
+                ns.tprint(`Failed to root ${server}: ${e}`);
+            }
         }
     }
     ns.tprint("Auto-root complete.");
