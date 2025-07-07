@@ -124,36 +124,90 @@ export async function main(ns) {
         if (!ns.hasRootAccess(server) || server === "home") return;
         const maxRam = ns.getServerMaxRam(server);
         const usedRam = ns.getServerUsedRam(server);
-        const scriptRam = ns.getScriptRam("hack.js", server);
-        const threads = Math.floor((maxRam - usedRam) / scriptRam);
-        if (threads < 1) return;
-        // Pick best script based on server state
-        let script = "hack.js";
-        if (ns.getServerSecurityLevel(target) > ns.getServerMinSecurityLevel(target) + 5) script = "weaken.js";
-        else if (ns.getServerMoneyAvailable(target) < ns.getServerMaxMoney(target) * 0.75) script = "grow.js";
-        // Only run if not already running
-        if (!ns.isRunning(script, server, target)) {
-            await ns.scp(script, server);
-            ns.exec(script, server, threads, target);
-            ns.tprint(`Deployed ${script} x${threads} to ${server} targeting ${target}`);
+        const hackRam = ns.getScriptRam("hack.js", server);
+        const growRam = ns.getScriptRam("grow.js", server);
+        const weakenRam = ns.getScriptRam("weaken.js", server);
+        let freeRam = maxRam - usedRam;
+        if (freeRam < Math.min(hackRam, growRam, weakenRam)) return;
+
+        // Dynamic thread allocation
+        let sec = ns.getServerSecurityLevel(target);
+        let minSec = ns.getServerMinSecurityLevel(target);
+        let money = ns.getServerMoneyAvailable(target);
+        let maxMoney = ns.getServerMaxMoney(target);
+        let weakenThreads = 0, growThreads = 0, hackThreads = 0;
+        if (sec > minSec + 5) {
+            weakenThreads = Math.floor(freeRam / weakenRam);
+        } else if (money < maxMoney * 0.75) {
+            growThreads = Math.floor(freeRam / growRam);
+        } else {
+            hackThreads = Math.floor(freeRam / hackRam);
+        }
+
+        // Deploy scripts as needed
+        if (weakenThreads > 0 && !ns.isRunning("weaken.js", server, target)) {
+            await ns.scp("weaken.js", server);
+            ns.exec("weaken.js", server, weakenThreads, target);
+            ns.tprint(`Deployed weaken.js x${weakenThreads} to ${server} targeting ${target}`);
+        }
+        if (growThreads > 0 && !ns.isRunning("grow.js", server, target)) {
+            await ns.scp("grow.js", server);
+            ns.exec("grow.js", server, growThreads, target);
+            ns.tprint(`Deployed grow.js x${growThreads} to ${server} targeting ${target}`);
+        }
+        if (hackThreads > 0 && !ns.isRunning("hack.js", server, target)) {
+            await ns.scp("hack.js", server);
+            ns.exec("hack.js", server, hackThreads, target);
+            ns.tprint(`Deployed hack.js x${hackThreads} to ${server} targeting ${target}`);
         }
     }
 
     // Main persistent loop
     while (true) {
         const allServers = scanAllServers(ns);
+        // Watchdog: restart critical scripts if not running
+        const criticalScripts = ["auto-root.js", "deployer.js", "auto-buy.js", "auto-server-upgrade.js", "auto-hacknet.js", "auto-contracts.js", "status.js", "messenger.js"];
+        for (const script of criticalScripts) {
+            if (!ns.isRunning(script, "home")) {
+                ns.run(`dev/${script}`);
+                ns.tprint(`[WATCHDOG] Restarted ${script}`);
+            }
+        }
+
+        // Faction/augmentation automation (basic)
+        if (ns.checkFactionInvitations) {
+            const invites = ns.checkFactionInvitations();
+            for (const faction of invites) {
+                ns.tprint(`[FACTION] Auto-joining ${faction}`);
+                ns.joinFaction(faction);
+            }
+        }
+        // TODO: Add augmentation auto-purchase logic if desired
+
+        // Root all servers except home and pserv-*
         for (const server of allServers) {
             if (server === "home" || server.startsWith("pserv-")) continue;
             tryRoot(ns, server);
         }
-        // Pick best target (start with n00dles, then highest money server you can hack, skip pserv-*)
+        // Smart target selection: rotate among top 3 targets
         let targets = allServers.filter(s => ns.hasRootAccess(s) && ns.getServerMaxMoney(s) > 0 && ns.getServerRequiredHackingLevel(s) <= ns.getHackingLevel() && !s.startsWith("pserv-"));
         targets = targets.sort((a, b) => ns.getServerMaxMoney(b) - ns.getServerMaxMoney(a));
-        const target = targets[0] || "n00dles";
+        const topTargets = targets.slice(0, 3);
+        let target = "n00dles";
+        if (topTargets.length > 0) {
+            target = topTargets[Math.floor(Date.now() / 60000) % topTargets.length];
+        }
+
+        // Deploy to all external servers
         for (const server of allServers) {
             if (server.startsWith("pserv-")) continue;
             await deployScripts(ns, server, target);
         }
+        // Deploy to purchased servers, always target best external server
+        for (const pserv of allServers.filter(s => s.startsWith("pserv-"))) {
+            await deployScripts(ns, pserv, target);
+        }
+
         // Optionally: buy servers, upgrade home, etc. (expand here as you progress)
         await ns.sleep(5000);
     }
